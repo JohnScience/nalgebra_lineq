@@ -77,9 +77,8 @@ where
     C: Dim,
     S: RawStorageMut<T, R, C>,
 {
-
     /// Adds a multiple of a second row to the first row.
-    /// 
+    ///
     /// # Safety
     ///
     /// This function is unsafe because it does not check if the row indices are valid.
@@ -123,9 +122,8 @@ where
     C: Dim,
     S: RawStorageMut<T, R, C>,
 {
-
     /// Multiplies a row by a scalar.
-    /// 
+    ///
     /// # Safety
     ///
     /// This function is unsafe because it does not check if the row index is valid.
