@@ -1,3 +1,4 @@
+use thiserror::Error;
 use nalgebra::{Matrix, Dim, RawStorageMut};
 use core::ops::{AddAssign, Mul, MulAssign};
 
@@ -7,6 +8,20 @@ extern crate num_rational;
 extern crate num_bigint;
 
 pub struct MatrixReprOfLinEq<T,R,C,S>(pub Matrix<T,R,C,S>);
+
+#[derive(Error, Debug)]
+pub enum BinaryRowIdxOutOfBoundsError {
+    #[error("First row index is out of bounds: {0:?}")]
+    FirstIdxOutOfBounds((usize, usize)),
+    #[error("Second row index is out of bounds: {0:?}")]
+    SecondIdxOutOfBounds((usize, usize)),
+    #[error("Both row indices are out of bounds: {0:?}")]
+    BothIdcesOutOfBounds((usize, usize)),
+}
+
+#[derive(Error, Debug)]
+#[error("Row index is out of bounds: {0:?}")]
+pub struct RowIdxOutOfBoundsError(usize);
 
 impl<T,R,C,S> MatrixReprOfLinEq<T,R,C,S> {
     pub fn new(matrix: Matrix<T,R,C,S>) -> Self {
@@ -42,6 +57,20 @@ where
             }
         );
     }
+
+    pub fn row_xchg(&mut self, i_1: usize, i_2: usize) -> Result<(), BinaryRowIdxOutOfBoundsError> {
+        use BinaryRowIdxOutOfBoundsError::*;
+
+        let nrows = self.0.nrows();
+        match (i_1,i_2) {
+            (i_1, i_2) if i_1 >= nrows && i_2 >= nrows => Err(BothIdcesOutOfBounds((i_1, i_2))),
+            (i_1, i_2) if i_1 >= nrows => Err(FirstIdxOutOfBounds((i_1, i_2))),
+            (i_1, i_2) if i_2 >= nrows => Err(SecondIdxOutOfBounds((i_1, i_2))),
+            _ => {
+                Ok(unsafe { self.row_xchg_unchecked(i_1, i_2) })
+            }
+        }
+    }
 }
 
 impl<T,R,C,S> MatrixReprOfLinEq<T,R,C,S>
@@ -58,7 +87,25 @@ where
         let ncols = self.0.ncols();
         for j in 0..ncols {
             let corresponding_entry = self.0[(i_2, j)].to_owned();
-            self.0[(i_1, j)] += corresponding_entry * factor;
+            *self.0.get_unchecked_mut((i_1, j)) += corresponding_entry * factor;
+        }
+    }
+
+
+    pub fn row_add<'a,'b>(&'a mut self, i_1: usize, i_2: usize, factor: &'b T) -> Result<(), BinaryRowIdxOutOfBoundsError>
+    where
+        T: Mul<&'b T, Output=T> + 'b + AddAssign<T>,
+    {
+        use BinaryRowIdxOutOfBoundsError::*;
+
+        let nrows = self.0.nrows();
+        match (i_1,i_2) {
+            (i_1, i_2) if i_1 >= nrows && i_2 >= nrows => Err(BothIdcesOutOfBounds((i_1, i_2))),
+            (i_1, i_2) if i_1 >= nrows => Err(FirstIdxOutOfBounds((i_1, i_2))),
+            (i_1, i_2) if i_2 >= nrows => Err(SecondIdxOutOfBounds((i_1, i_2))),
+            _ => {
+                Ok(unsafe { self.row_add_unchecked(i_1, i_2, factor) })
+            }
         }
     }
 }
@@ -76,7 +123,19 @@ where
     {
         let ncols = self.0.ncols();
         for j in 0..ncols {
-            self.0[(i, j)] *= factor;
+            *self.0.get_unchecked_mut((i, j)) *= factor;
+        }
+    }
+
+    pub fn row_mul<'a>(&mut self, i: usize, factor: &'a T) -> Result<(), RowIdxOutOfBoundsError>
+    where
+        T: MulAssign<&'a T>,
+    {
+        let nrows = self.0.nrows();
+        if i >= nrows {
+            Err(RowIdxOutOfBoundsError(i))
+        } else {
+            Ok(unsafe { self.row_mul_unchecked(i, factor) })
         }
     }
 }
