@@ -8,3 +8,6 @@ edition = "2021"
 [dependencies]
 nalgebra = "0.31.0"
 
+[dev-dependencies]
+num-rational = "0.4.0"
+num-bigint = "0.4.3"
