@@ -1,5 +1,5 @@
 use nalgebra::{Matrix, Dim, RawStorageMut};
-use core::ops::{AddAssign, Mul};
+use core::ops::{AddAssign, Mul, MulAssign};
 
 pub struct MatrixReprOfLinEq<T,R,C,S>(pub Matrix<T,R,C,S>);
 
@@ -24,7 +24,7 @@ where
     /// # Safety
     /// 
     /// This function is unsafe because it does not check if the indices are valid.
-    unsafe fn row_xchg(&mut self, i_1: usize, i_2: usize)
+    pub unsafe fn row_xchg(&mut self, i_1: usize, i_2: usize)
     {
         let ncols = self.0.ncols();
         (0..ncols)
@@ -43,37 +43,40 @@ where
     C: Dim,
     S: RawStorageMut<T,R,C>,
 {
-    unsafe fn row_add<'a,'b>(&'a mut self, i_1: usize, i_2: usize, factor: &'b T)
+    pub unsafe fn row_add<'a,'b>(&'a mut self, i_1: usize, i_2: usize, factor: &'b T)
     where
         T: Mul<&'b T, Output=T> + 'b + AddAssign<T>,
     {
         let ncols = self.0.ncols();
         for j in 0..ncols {
-            let multiplier = self.0[(i_2, j)].to_owned();
-            self.0[(i_1, j)] += multiplier * factor;
+            let corresponding_entry = self.0[(i_2, j)].to_owned();
+            self.0[(i_1, j)] += corresponding_entry * factor;
         }
     }
-} 
+}
 
-// impl<T,R,C,S> MatrixReprOfLinEq<T,R,C,S>
-// where
-//     T: Clone + AddAssign,
-//     R: Dim,
-//     C: Dim,
-//     S: RawStorageMut<T,R,C>,
-// {
-//     unsafe fn row_mul(&mut self, i: usize, factor: T) {
-//         let ncols = self.0.ncols();
-//         for j in 0..ncols {
-//             self.0[(i, j)] = self.0[(i, j)] * factor;
-//         }
-//     }
-// }
+impl<T,R,C,S> MatrixReprOfLinEq<T,R,C,S>
+where
+    T: Clone + MulAssign,
+    R: Dim,
+    C: Dim,
+    S: RawStorageMut<T,R,C>,
+{
+    pub unsafe fn row_mul<'a>(&mut self, i: usize, factor: &'a T)
+    where
+        T: MulAssign<&'a T>,
+    {
+        let ncols = self.0.ncols();
+        for j in 0..ncols {
+            self.0[(i, j)] *= factor;
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nalgebra::{Matrix, Dim, matrix};
+    use nalgebra::matrix;
 
     #[test]
     fn row_xchg_works() {
@@ -102,6 +105,22 @@ mod tests {
             m.0,
             matrix!(
                 4i32, 6i32;
+                3i32, 4i32;
+            )
+        );
+    }
+
+    #[test]
+    fn row_mul_works() {
+        let mut m = MatrixReprOfLinEq::new(matrix!(
+            1i32, 2i32;
+            3i32, 4i32;
+        ));
+        unsafe { m.row_mul(0, &2i32) };
+        assert_eq!(
+            m.0,
+            matrix!(
+                2i32, 4i32;
                 3i32, 4i32;
             )
         );
