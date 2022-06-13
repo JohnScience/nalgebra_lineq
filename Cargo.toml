@@ -1,5 +1,5 @@
 [package]
-name = "nalgebra_lineq"
+name = "nalgebra_linsys"
 version = "0.1.0"
 edition = "2021"
 

@@ -7,7 +7,7 @@ use core::ops::{AddAssign, Mul, MulAssign};
 use nalgebra::{Dim, Matrix, RawStorageMut};
 use thiserror::Error;
 
-pub struct MatrixReprOfLinEq<T, R, C, S>(pub Matrix<T, R, C, S>);
+pub struct MatrixReprOfLinSys<T, R, C, S>(pub Matrix<T, R, C, S>);
 
 #[derive(Error, Debug)]
 pub enum BinaryRowIdxOutOfBoundsError {
@@ -23,9 +23,9 @@ pub enum BinaryRowIdxOutOfBoundsError {
 #[error("Row index is out of bounds: {0:?}")]
 pub struct RowIdxOutOfBoundsError(usize);
 
-impl<T, R, C, S> MatrixReprOfLinEq<T, R, C, S> {
+impl<T, R, C, S> MatrixReprOfLinSys<T, R, C, S> {
     pub fn new(matrix: Matrix<T, R, C, S>) -> Self {
-        MatrixReprOfLinEq(matrix)
+        MatrixReprOfLinSys(matrix)
     }
 
     pub fn to_matrix(self) -> Matrix<T, R, C, S> {
@@ -33,7 +33,7 @@ impl<T, R, C, S> MatrixReprOfLinEq<T, R, C, S> {
     }
 }
 
-impl<T, R, C, S> MatrixReprOfLinEq<T, R, C, S>
+impl<T, R, C, S> MatrixReprOfLinSys<T, R, C, S>
 where
     R: Dim,
     C: Dim,
@@ -70,7 +70,7 @@ where
     }
 }
 
-impl<T, R, C, S> MatrixReprOfLinEq<T, R, C, S>
+impl<T, R, C, S> MatrixReprOfLinSys<T, R, C, S>
 where
     T: Clone + AddAssign,
     R: Dim,
@@ -115,7 +115,7 @@ where
     }
 }
 
-impl<T, R, C, S> MatrixReprOfLinEq<T, R, C, S>
+impl<T, R, C, S> MatrixReprOfLinSys<T, R, C, S>
 where
     T: Clone + MulAssign,
     R: Dim,
@@ -158,7 +158,7 @@ mod tests {
 
     #[test]
     fn row_xchg_works_for_prim_ints() {
-        let mut m = MatrixReprOfLinEq::new(matrix!(
+        let mut m = MatrixReprOfLinSys::new(matrix!(
             1usize, 2usize;
             3usize, 4usize;
         ));
@@ -174,7 +174,7 @@ mod tests {
 
     #[test]
     fn row_add_works_for_prim_ints() {
-        let mut m = MatrixReprOfLinEq::new(matrix!(
+        let mut m = MatrixReprOfLinSys::new(matrix!(
             1i32, 2i32;
             3i32, 4i32;
         ));
@@ -190,7 +190,7 @@ mod tests {
 
     #[test]
     fn row_mul_works_for_prim_ints() {
-        let mut m = MatrixReprOfLinEq::new(matrix!(
+        let mut m = MatrixReprOfLinSys::new(matrix!(
             1i32, 2i32;
             3i32, 4i32;
         ));
@@ -211,7 +211,7 @@ mod tests {
 
         // 1/2 3/4
         // 5/6 7/8
-        let mut m = MatrixReprOfLinEq::new(matrix!(
+        let mut m = MatrixReprOfLinSys::new(matrix!(
             BigRational::new(BigInt::from(1), BigInt::from(2)),
             BigRational::new(BigInt::from(3), BigInt::from(4));
             BigRational::new(BigInt::from(5), BigInt::from(6)),
@@ -238,7 +238,7 @@ mod tests {
 
         // 1/2 3/4
         // 5/6 7/8
-        let mut m = MatrixReprOfLinEq::new(matrix!(
+        let mut m = MatrixReprOfLinSys::new(matrix!(
             BigRational::new(BigInt::from(1), BigInt::from(2)),
             BigRational::new(BigInt::from(3), BigInt::from(4));
             BigRational::new(BigInt::from(5), BigInt::from(6)),
@@ -278,7 +278,7 @@ mod tests {
 
         // 1/2 3/4
         // 5/6 7/8
-        let mut m = MatrixReprOfLinEq::new(matrix!(
+        let mut m = MatrixReprOfLinSys::new(matrix!(
             BigRational::new(BigInt::from(1), BigInt::from(2)),
             BigRational::new(BigInt::from(3), BigInt::from(4));
             BigRational::new(BigInt::from(5), BigInt::from(6)),
