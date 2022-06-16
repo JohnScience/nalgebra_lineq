@@ -4,9 +4,15 @@ extern crate num_bigint;
 extern crate num_rational;
 
 pub mod err;
-pub mod row_add;
-pub mod row_mul;
-pub mod row_xchg;
+pub mod param_obj;
+
+// implementations
+mod row_add;
+mod row_mul;
+mod row_xchg;
+
+// convenience alias
+pub(crate) use param_obj as po;
 
 use nalgebra::Matrix;
 
@@ -16,7 +22,10 @@ use nalgebra::Matrix;
 ///
 /// ```
 /// use nalgebra::{Matrix, matrix};
-/// use nalgebra_linsys::MatrixReprOfLinSys;
+/// use nalgebra_linsys::{
+///     MatrixReprOfLinSys,
+///     param_obj as po,
+/// };
 ///
 /// // x₁ + 2x₂ = 3
 /// // 4x₁ + 5x₂ = 6
@@ -25,7 +34,16 @@ use nalgebra::Matrix;
 ///    4, 5, 6;
 /// ]);
 ///
-/// a.row_add(1,0,&-4);
+/// a.row_add(po::RowAdd {
+///     // the zero-based index of the row to which the scaled second row is added, i.e.
+///     // the zero-based index of the inout row;
+///     inout_row_zbi: 1,
+///     // the zero-based index of the row whose scaled value is added to the inout row,
+///     // i.e. the zero-based index of the in row;
+///     in_row_zbi: 0,
+///     // the factor by which the in row is scaled before summation.
+///     factor: &-4
+/// });
 ///
 /// // x₁ + 2x₂ = 3
 /// // -3x₂ = -6
@@ -91,9 +109,9 @@ impl<T, R, C, S> MatrixReprOfLinSys<T, R, C, S> {
     ///     4, 5, 6;
     /// ]);
     /// ```
-    /// 
+    ///
     /// # Notes
-    /// 
+    ///
     /// As opposed to `mrls.0`, a call of this method can, depending on the context,
     /// better convey that the returned (owned) value is a matrix.
     ///
@@ -114,7 +132,12 @@ mod tests {
             1usize, 2usize;
             3usize, 4usize;
         ));
-        unsafe { m.row_xchg_unchecked(row_xchg::PO { row_zbi_1: 0, row_zbi_2: 1 }) };
+        unsafe {
+            m.row_xchg_unchecked(param_obj::RowXchg {
+                row_zbi_1: 0,
+                row_zbi_2: 1,
+            })
+        };
         assert_eq!(
             m.0,
             matrix!(
@@ -130,7 +153,14 @@ mod tests {
             1i32, 2i32;
             3i32, 4i32;
         ));
-        unsafe { m.row_add_unchecked(0, 1, &1i32) };
+        // Adds the 1st row to the 0th row once
+        unsafe {
+            m.row_add_unchecked(po::RowAdd {
+                inout_row_zbi: 0,
+                in_row_zbi: 1,
+                factor: &1,
+            })
+        };
         assert_eq!(
             m.0,
             matrix!(
@@ -153,7 +183,12 @@ mod tests {
             BigRational::new(BigInt::from(5), BigInt::from(6)),
             BigRational::new(BigInt::from(7), BigInt::from(8));
         ));
-        unsafe { m.row_xchg_unchecked(row_xchg::PO { row_zbi_1: 0, row_zbi_2: 1 }) };
+        unsafe {
+            m.row_xchg_unchecked(po::RowXchg {
+                row_zbi_1: 0,
+                row_zbi_2: 1,
+            })
+        };
         // 5/6 7/8
         // 1/2 3/4
         assert_eq!(
@@ -183,7 +218,13 @@ mod tests {
         // 1/1 = 1
         let factor = BigRational::new(BigInt::from(1), BigInt::from(1));
         // Adds 0th row to 1st row with factor
-        unsafe { m.row_add_unchecked(1, 0, &factor) };
+        unsafe {
+            m.row_add_unchecked(po::RowAdd {
+                inout_row_zbi: 1,
+                in_row_zbi: 0,
+                factor: &factor,
+            })
+        };
         // 1/2               3/4
         // (1/2 + 5/6 * 1/1) (3/4 + 7/8 * 1/1)
         //
@@ -223,7 +264,12 @@ mod tests {
         // 2/1 = 2
         let factor = BigRational::new(BigInt::from(2), BigInt::from(1));
         // Multiplies 0th row by factor
-        unsafe { m.row_mul_unchecked(row_mul::PO{ row_zbi: 0, factor: &factor }) };
+        unsafe {
+            m.row_mul_unchecked(po::RowMul {
+                row_zbi: 0,
+                factor: &factor,
+            })
+        };
         // 1/2 * 2/1 = 2/2 = 1/1
         // 3/4 * 2/1 = 6/4 = 3/2
         assert_eq!(

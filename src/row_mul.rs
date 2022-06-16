@@ -1,16 +1,10 @@
-use crate::{
-    MatrixReprOfLinSys,
-    err::RowIdxOutOfBoundsError,
-};
+//! Module with both safe and unsafe implementations of [elementary row operation] of row multiplication
+//!
+//! [elementary row operation]: https://www.math.ucdavis.edu/~linear/old/notes3.pdf
+
+use crate::{err::RowIdxOutOfBoundsError, po::RowMul as PO, MatrixReprOfLinSys};
 use core::ops::MulAssign;
 use nalgebra::{Dim, RawStorageMut};
-
-pub type PO<'a,T> = ParamObject<'a,T>;
-
-pub struct ParamObject<'a, T> {
-    pub row_zbi: usize,
-    pub factor: &'a T,
-}
 
 impl<T, R, C, S> MatrixReprOfLinSys<T, R, C, S>
 where
@@ -43,7 +37,7 @@ where
             Err(RowIdxOutOfBoundsError(i))
         } else {
             #[allow(clippy::unit_arg)]
-            Ok(unsafe { self.row_mul_unchecked(PO{ row_zbi: i, factor }) })
+            Ok(unsafe { self.row_mul_unchecked(PO { row_zbi: i, factor }) })
         }
     }
 }
