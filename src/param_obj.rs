@@ -3,6 +3,19 @@
 //! [elementary row operations]: https://www.math.ucdavis.edu/~linear/old/notes3.pdf
 //! [parameter objects]: https://en.wikipedia.org/wiki/Parameter_object
 
+use crate::MatrixReprOfLinSys;
+
+pub trait ElementaryRowOperation<T,R,C,S>: Sized {
+    type Error;
+    unsafe fn perform_unchecked(self, m: &mut MatrixReprOfLinSys<T,R,C,S>) -> ();
+    fn validate(&self, m: &MatrixReprOfLinSys<T,R,C,S>) -> Result<(),Self::Error>;
+    fn perform(self, m: &mut MatrixReprOfLinSys<T,R,C,S>) -> Result<(),Self::Error> {
+        self.validate(m)?;
+        unsafe { self.perform_unchecked(m) };
+        Ok(())
+    }
+}
+
 /// [Parameter object] for [`MatrixReprOfLinSys::row_xchg`][`crate::MatrixReprOfLinSys::row_xchg`]
 /// and [`MatrixReprOfLinSys::row_xchg_unchecked`][`crate::MatrixReprOfLinSys::row_xchg_unchecked`].
 ///

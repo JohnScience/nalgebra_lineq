@@ -15,6 +15,7 @@ mod row_xchg;
 pub(crate) use param_obj as po;
 
 use nalgebra::Matrix;
+use po::ElementaryRowOperation;
 
 /// [Matrix representation of a linear system][MRLS].
 ///
@@ -119,5 +120,14 @@ impl<T, R, C, S> MatrixReprOfLinSys<T, R, C, S> {
     /// [MRLS]: http://linear.ups.edu/html/definitions.html
     pub fn to_matrix(self) -> Matrix<T, R, C, S> {
         self.0
+    }
+}
+
+impl<T,R,C,S> MatrixReprOfLinSys<T,R,C,S> {
+    pub fn perform_elementary_row_operation<O>(&mut self, o: O) -> Result<(), O::Error>
+    where
+        O: ElementaryRowOperation<T,R,C,S>
+    {
+        o.perform(self)
     }
 }

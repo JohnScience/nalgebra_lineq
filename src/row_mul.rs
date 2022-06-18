@@ -2,42 +2,33 @@
 //!
 //! [elementary row operation]: https://www.math.ucdavis.edu/~linear/old/notes3.pdf
 
-use crate::{err::RowIdxOutOfBoundsError, po::RowMul as PO, MatrixReprOfLinSys};
+use crate::{err::RowIdxOutOfBoundsError, po::{RowMul as PO, ElementaryRowOperation}, MatrixReprOfLinSys};
 use core::ops::MulAssign;
 use nalgebra::{Dim, RawStorageMut};
 
-impl<T, R, C, S> MatrixReprOfLinSys<T, R, C, S>
+impl<'a,T,R,C,S> ElementaryRowOperation<T,R,C,S> for PO<'a, T>
 where
-    T: Clone + MulAssign,
+    T: Clone + MulAssign<&'a T>,
     R: Dim,
     C: Dim,
-    S: RawStorageMut<T, R, C>,
+    S: RawStorageMut<T, R, C>
 {
-    /// Multiplies a row by a scalar.
-    ///
-    /// # Safety
-    ///
-    /// This function is unsafe because it does not check if the row index is valid.
-    pub unsafe fn row_mul_unchecked<'a>(&mut self, PO { row_zbi: i, factor }: PO<'a, T>)
-    where
-        T: MulAssign<&'a T>,
-    {
-        let ncols = self.0.ncols();
+    type Error = RowIdxOutOfBoundsError;
+
+    unsafe fn perform_unchecked(self, m: &mut MatrixReprOfLinSys<T,R,C,S>) -> () {
+        let PO { row_zbi: i, factor } = self;
+
+        let ncols = m.0.ncols();
         for j in 0..ncols {
-            *self.0.get_unchecked_mut((i, j)) *= factor;
+            *m.0.get_unchecked_mut((i, j)) *= factor;
         }
     }
 
-    pub fn row_mul<'a>(&mut self, i: usize, factor: &'a T) -> Result<(), RowIdxOutOfBoundsError>
-    where
-        T: MulAssign<&'a T>,
-    {
-        let nrows = self.0.nrows();
-        if i >= nrows {
-            Err(RowIdxOutOfBoundsError(i))
-        } else {
-            #[allow(clippy::unit_arg)]
-            Ok(unsafe { self.row_mul_unchecked(PO { row_zbi: i, factor }) })
-        }
+    fn validate(&self, m: &MatrixReprOfLinSys<T,R,C,S>) -> Result<(),Self::Error> {
+        let row_zero_based_idx = self.row_zbi;
+        let nrows = m.0.nrows();
+
+        if row_zero_based_idx >= nrows { Err(RowIdxOutOfBoundsError(row_zero_based_idx)) }
+        else { Ok(()) }
     }
 }
