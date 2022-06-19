@@ -3,7 +3,7 @@
 
 # Solving [linear system]s with [`nalgebra`] using [elementary row operations][ero]
 
-This is a crate that you might want to use if you're fine with **suboptimal performance** and, for example, want to have a library that would offer correct yet not necessarily optimized implementations of [elementary row operations], [Gaussian], and/or [Gauss-Jordan elimination].
+This is a crate that you might want to use if you're fine with **suboptimal performance** and, for example, want to have a library that would offer correct yet not necessarily optimized implementations of [elementary row operations][ero], [Gaussian], and/or [Gauss-Jordan elimination].
 
 # Notes
 
