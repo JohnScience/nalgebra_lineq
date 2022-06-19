@@ -1,7 +1,37 @@
 [package]
 name = "nalgebra_linsys"
 version = "0.1.0"
+authors = ["Dmitrii Demenev <demenev.dmitriy1@gmail.com>"]
 edition = "2021"
+rust-version = "1.56.1" # https://github.com/foresterre/cargo-msrv
+description = "A library with a type-wrapper around nalgebra::Matrix for solving linear systems"
+documentation = "https://docs.rs/nalgebra_linsys"
+readme = "README.md"
+repository = "https://github.com/JohnScience/nalgebra_linsys"
+license = "MIT OR Apache-2.0"
+# license-file | not needed
+keywords = ["nalgebra", "matrix", "linear system"]
+categories = ["mathematics", "science"] # https://crates.io/category_slugs
+# workspace | not needed
+# build | not needed
+# links | not needed
+# exclude | not needed
+include = [
+    "/Cargo.toml",
+    "/LICENSE_APACHE",
+    "/LICENSE_MIT",
+    "/README.md",
+    "/src/**",
+    "/tests/**",
+]
+# publish | not needed
+# metadata | not needed
+# default-run | not needed
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
+# resolver | not needed
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
