@@ -10,7 +10,7 @@ readme = "README.md"
 repository = "https://github.com/JohnScience/nalgebra_linsys"
 license = "MIT OR Apache-2.0"
 # license-file | not needed
-keywords = ["nalgebra", "matrix", "linear system"]
+keywords = ["nalgebra", "matrix", "linear", "system"]
 categories = ["mathematics", "science"] # https://crates.io/category_slugs
 # workspace | not needed
 # build | not needed
