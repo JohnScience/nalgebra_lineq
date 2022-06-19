@@ -4,18 +4,23 @@ extern crate num_bigint;
 extern crate num_rational;
 
 pub mod err;
-pub mod param_obj;
-
-// implementations
+mod elem_row_op;
 mod row_add;
 mod row_mul;
 mod row_xchg;
 
-// convenience alias
-pub(crate) use param_obj as po;
-
+use elem_row_op::ElemRowOp;
 use nalgebra::Matrix;
-use po::ElementaryRowOperation;
+
+/// Module with types representing [elementary row operations], namely row addition, row exchange, and row multiplication
+/// 
+/// [elementary row operations]: https://www.math.ucdavis.edu/~linear/old/notes3.pdf
+pub mod elem_row_ops {
+    pub use crate::row_add::RowAdd;
+    pub use crate::row_mul::RowMul;
+    pub use crate::row_xchg::RowXchg;
+    pub use crate::elem_row_op::ElemRowOp;
+}
 
 /// [Matrix representation of a linear system][MRLS].
 ///
@@ -24,32 +29,32 @@ use po::ElementaryRowOperation;
 /// ```
 /// use nalgebra::{Matrix, matrix};
 /// use nalgebra_linsys::{
-///     MatrixReprOfLinSys,
-///     param_obj as po,
+///     MatrixReprOfLinSys as MRLS,
+///     elem_row_ops::RowAdd,
 /// };
 ///
 /// // x₁ + 2x₂ = 3
 /// // 4x₁ + 5x₂ = 6
-/// let mut a = MatrixReprOfLinSys::new(matrix![
+/// let mut m = MRLS::new(matrix![
 ///    1, 2, 3;
 ///    4, 5, 6;
 /// ]);
 ///
-/// a.row_add(po::RowAdd {
-///     // the zero-based index of the row to which the scaled second row is added, i.e.
-///     // the zero-based index of the inout row;
+/// m.perform_elem_row_op(RowAdd {
+///     // The zero-based index of the row to which the scaled second row is added, i.e.
+///     // the zero-based index of the "inout row";
 ///     inout_row_zbi: 1,
-///     // the zero-based index of the row whose scaled value is added to the inout row,
-///     // i.e. the zero-based index of the in row;
+///     // The zero-based index of the row whose scaled value is added to the "inout row",
+///     // i.e. the zero-based index of the "in row";
 ///     in_row_zbi: 0,
-///     // the factor by which the in row is scaled before summation.
+///     // The factor by which the "in row" is scaled before summation.
 ///     factor: &-4
-/// });
+/// }).unwrap();
 ///
 /// // x₁ + 2x₂ = 3
 /// // -3x₂ = -6
 /// assert_eq!(
-///   a.0,
+///   m.0,
 ///  matrix![
 ///   1, 2, 3;
 ///   0, -3, -6;
@@ -81,7 +86,7 @@ impl<T, R, C, S> MatrixReprOfLinSys<T, R, C, S> {
         MatrixReprOfLinSys(matrix)
     }
 
-    /// Turns the given [matrix representation of a linear system][MRLS] into 
+    /// Turns the given [matrix representation of a linear system][MRLS] into
     /// an object of [nalgebra::Matrix] type.
     ///
     /// # Example
@@ -123,10 +128,16 @@ impl<T, R, C, S> MatrixReprOfLinSys<T, R, C, S> {
     }
 }
 
-impl<T,R,C,S> MatrixReprOfLinSys<T,R,C,S> {
-    pub fn perform_elementary_row_operation<O>(&mut self, o: O) -> Result<(), O::Error>
+impl<T, R, C, S> MatrixReprOfLinSys<T, R, C, S> {
+    /// Performs the given [elementary row operation] on the matrix representation of the linear system.
+    /// 
+    /// For examples, refer to the documentation of [`RowXchg`][crate::elem_row_ops::RowXchg],
+    /// [`RowAdd`][crate::elem_row_ops::RowAdd], and/or [`RowMul`][crate::elem_row_ops::RowMul].
+    /// 
+    /// [elementary row operation]: https://www.math.ucdavis.edu/~linear/old/notes3.pdf
+    pub fn perform_elem_row_op<O>(&mut self, o: O) -> Result<(), O::Error>
     where
-        O: ElementaryRowOperation<T,R,C,S>
+        O: ElemRowOp<Self>,
     {
         o.perform(self)
     }

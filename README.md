@@ -5,6 +5,10 @@
 
 This is a crate that you might want to use if you're fine with **suboptimal performance** and, for example, want to have a library that would offer correct yet not necessarily optimized implementations of [elementary row operations], [Gaussian], and/or [Gauss-Jordan elimination].
 
+# Notes
+
+At the time of writing, [Gaussian], and/or [Gauss-Jordan elimination] are not provided.
+
 [`nalgebra_linsys`]: https://crates.io/crates/nalgebra_linsys
 [linear system]: https://en.wikipedia.org/wiki/System_of_linear_equations
 [`nalgebra`]: https://crates.io/crates/nalgebra
