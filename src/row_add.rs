@@ -6,7 +6,7 @@ use crate::{
     elem_row_op::ElemRowOp, err::BinaryRowIdxOutOfBoundsError, MatrixReprOfLinSys,
 };
 use core::ops::{AddAssign, Mul};
-use nalgebra::{Dim, RawStorageMut};
+use nalgebra::{Dim, RawStorageMut, Matrix};
 
 /// The type representing the [elementary row operation] of row addition, i.e. the operation on
 /// a matrix where the multiple of one row is added entrywise to another row.
@@ -66,6 +66,49 @@ pub struct RowAdd<'a, T> {
     pub factor: &'a T,
 }
 
+impl<'a, T, R, C, S> ElemRowOp<Matrix<T,R,C,S>> for RowAdd<'a, T>
+where
+    T: Clone + AddAssign + Mul<&'a T, Output = T>,
+    R: Dim,
+    C: Dim,
+    S: RawStorageMut<T, R, C>,
+{
+    type Error = BinaryRowIdxOutOfBoundsError;
+
+    unsafe fn perform_unchecked(self, m: &mut Matrix<T, R, C, S>) {
+        let RowAdd {
+            inout_row_zbi: i_1,
+            in_row_zbi: i_2,
+            factor,
+        } = self;
+
+        let ncols = m.ncols();
+
+        for j in 0..ncols {
+            let corresponding_entry = m[(i_2, j)].to_owned();
+            *m.get_unchecked_mut((i_1, j)) += corresponding_entry * factor;
+        }
+    }
+
+    fn validate(&self, m: &Matrix<T, R, C, S>) -> Result<(), Self::Error> {
+        use BinaryRowIdxOutOfBoundsError::*;
+
+        let RowAdd {
+            inout_row_zbi: i_1,
+            in_row_zbi: i_2,
+            factor: _unused_factor,
+        } = *self;
+
+        let nrows = m.nrows();
+        match (i_1, i_2) {
+            (i_1, i_2) if i_1 >= nrows && i_2 >= nrows => Err(BothIdcesOutOfBounds((i_1, i_2))),
+            (i_1, i_2) if i_1 >= nrows => Err(FirstIdxOutOfBounds((i_1, i_2))),
+            (i_1, i_2) if i_2 >= nrows => Err(SecondIdxOutOfBounds((i_1, i_2))),
+            _ => Ok(()),
+        }
+    }
+}
+
 impl<'a, T, R, C, S> ElemRowOp<MatrixReprOfLinSys<T,R,C,S>> for RowAdd<'a, T>
 where
     T: Clone + AddAssign + Mul<&'a T, Output = T>,
@@ -75,36 +118,11 @@ where
 {
     type Error = BinaryRowIdxOutOfBoundsError;
 
-    unsafe fn perform_unchecked(self, m: &mut MatrixReprOfLinSys<T, R, C, S>) {
-        let RowAdd {
-            inout_row_zbi: i_1,
-            in_row_zbi: i_2,
-            factor,
-        } = self;
-
-        let ncols = m.0.ncols();
-
-        for j in 0..ncols {
-            let corresponding_entry = m.0[(i_2, j)].to_owned();
-            *m.0.get_unchecked_mut((i_1, j)) += corresponding_entry * factor;
-        }
+    unsafe fn perform_unchecked(self, m: &mut MatrixReprOfLinSys<T,R,C,S>) {
+        self.perform_unchecked(&mut m.0)
     }
 
-    fn validate(&self, m: &MatrixReprOfLinSys<T, R, C, S>) -> Result<(), Self::Error> {
-        use BinaryRowIdxOutOfBoundsError::*;
-
-        let RowAdd {
-            inout_row_zbi: i_1,
-            in_row_zbi: i_2,
-            factor: _unused_factor,
-        } = *self;
-
-        let nrows = m.0.nrows();
-        match (i_1, i_2) {
-            (i_1, i_2) if i_1 >= nrows && i_2 >= nrows => Err(BothIdcesOutOfBounds((i_1, i_2))),
-            (i_1, i_2) if i_1 >= nrows => Err(FirstIdxOutOfBounds((i_1, i_2))),
-            (i_1, i_2) if i_2 >= nrows => Err(SecondIdxOutOfBounds((i_1, i_2))),
-            _ => Ok(()),
-        }
+    fn validate(&self, m: &MatrixReprOfLinSys<T,R,C,S>) -> Result<(), Self::Error> {
+        self.validate(&m.0)
     }
 }

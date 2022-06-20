@@ -5,7 +5,7 @@
 use crate::{
     elem_row_op::ElemRowOp, err::BinaryRowIdxOutOfBoundsError, MatrixReprOfLinSys,
 };
-use nalgebra::{Dim, RawStorageMut};
+use nalgebra::{Dim, RawStorageMut, Matrix};
 
 /// The type representing the [elementary row operation] of row exchange, i.e. the operation
 /// on a matrix that swaps entries in two of its rows.
@@ -54,6 +54,47 @@ pub struct RowXchg {
     pub row_zbi_2: usize,
 }
 
+impl<T, R, C, S> ElemRowOp<Matrix<T,R,C,S>> for RowXchg
+where
+    R: Dim,
+    C: Dim,
+    S: RawStorageMut<T, R, C>,
+{
+    type Error = BinaryRowIdxOutOfBoundsError;
+
+    unsafe fn perform_unchecked(self, m: &mut Matrix<T, R, C, S>) {
+        let RowXchg {
+            row_zbi_1: i_1,
+            row_zbi_2: i_2,
+        } = self;
+
+        let ncols = m.ncols();
+        (0..ncols)
+            .map(|j| ((i_1, j), (i_2, j)))
+            .for_each(|(row_col1, row_col2)| {
+                m.swap_unchecked(row_col1, row_col2);
+            });
+    }
+
+    fn validate(&self, m: &Matrix<T, R, C, S>) -> Result<(), Self::Error> {
+        use BinaryRowIdxOutOfBoundsError::*;
+
+        let RowXchg {
+            row_zbi_1: i_1,
+            row_zbi_2: i_2,
+        } = *self;
+
+        let nrows = m.nrows();
+
+        match (i_1, i_2) {
+            (i_1, i_2) if i_1 >= nrows && i_2 >= nrows => Err(BothIdcesOutOfBounds((i_1, i_2))),
+            (i_1, i_2) if i_1 >= nrows => Err(FirstIdxOutOfBounds((i_1, i_2))),
+            (i_1, i_2) if i_2 >= nrows => Err(SecondIdxOutOfBounds((i_1, i_2))),
+            _ => Ok(()),
+        }
+    }
+}
+
 impl<T, R, C, S> ElemRowOp<MatrixReprOfLinSys<T,R,C,S>> for RowXchg
 where
     R: Dim,
@@ -62,35 +103,11 @@ where
 {
     type Error = BinaryRowIdxOutOfBoundsError;
 
-    unsafe fn perform_unchecked(self, m: &mut MatrixReprOfLinSys<T, R, C, S>) {
-        let RowXchg {
-            row_zbi_1: i_1,
-            row_zbi_2: i_2,
-        } = self;
-
-        let ncols = m.0.ncols();
-        (0..ncols)
-            .map(|j| ((i_1, j), (i_2, j)))
-            .for_each(|(row_col1, row_col2)| {
-                m.0.swap_unchecked(row_col1, row_col2);
-            });
+    unsafe fn perform_unchecked(self, m: &mut MatrixReprOfLinSys<T,R,C,S>) {
+        self.perform_unchecked(&mut m.0)
     }
 
-    fn validate(&self, m: &MatrixReprOfLinSys<T, R, C, S>) -> Result<(), Self::Error> {
-        use BinaryRowIdxOutOfBoundsError::*;
-
-        let RowXchg {
-            row_zbi_1: i_1,
-            row_zbi_2: i_2,
-        } = *self;
-
-        let nrows = m.0.nrows();
-
-        match (i_1, i_2) {
-            (i_1, i_2) if i_1 >= nrows && i_2 >= nrows => Err(BothIdcesOutOfBounds((i_1, i_2))),
-            (i_1, i_2) if i_1 >= nrows => Err(FirstIdxOutOfBounds((i_1, i_2))),
-            (i_1, i_2) if i_2 >= nrows => Err(SecondIdxOutOfBounds((i_1, i_2))),
-            _ => Ok(()),
-        }
+    fn validate(&self, m: &MatrixReprOfLinSys<T,R,C,S>) -> Result<(), Self::Error> {
+        self.validate(&m.0)
     }
 }

@@ -4,7 +4,7 @@
 
 use crate::{elem_row_op::ElemRowOp, err::RowIdxOutOfBoundsError, MatrixReprOfLinSys};
 use core::ops::MulAssign;
-use nalgebra::{Dim, RawStorageMut};
+use nalgebra::{Dim, RawStorageMut, Matrix};
 
 /// The type representing the [elementary row operation] of row multiplication, i.e. the operation on
 /// a matrix where one row is scaled by the same factor in every entry.
@@ -58,6 +58,36 @@ pub struct RowMul<'a, T> {
     pub factor: &'a T,
 }
 
+impl<'a, T, R, C, S> ElemRowOp<Matrix<T,R,C,S>> for RowMul<'a, T>
+where
+    T: Clone + MulAssign<&'a T>,
+    R: Dim,
+    C: Dim,
+    S: RawStorageMut<T, R, C>,
+{
+    type Error = RowIdxOutOfBoundsError;
+
+    unsafe fn perform_unchecked(self, m: &mut Matrix<T, R, C, S>) {
+        let RowMul { row_zbi: i, factor } = self;
+
+        let ncols = m.ncols();
+        for j in 0..ncols {
+            *m.get_unchecked_mut((i, j)) *= factor;
+        }
+    }
+
+    fn validate(&self, m: &Matrix<T, R, C, S>) -> Result<(), Self::Error> {
+        let row_zero_based_idx = self.row_zbi;
+        let nrows = m.nrows();
+
+        if row_zero_based_idx >= nrows {
+            Err(RowIdxOutOfBoundsError(row_zero_based_idx))
+        } else {
+            Ok(())
+        }
+    }
+}
+
 impl<'a, T, R, C, S> ElemRowOp<MatrixReprOfLinSys<T,R,C,S>> for RowMul<'a, T>
 where
     T: Clone + MulAssign<&'a T>,
@@ -67,23 +97,11 @@ where
 {
     type Error = RowIdxOutOfBoundsError;
 
-    unsafe fn perform_unchecked(self, m: &mut MatrixReprOfLinSys<T, R, C, S>) {
-        let RowMul { row_zbi: i, factor } = self;
-
-        let ncols = m.0.ncols();
-        for j in 0..ncols {
-            *m.0.get_unchecked_mut((i, j)) *= factor;
-        }
+    unsafe fn perform_unchecked(self, m: &mut MatrixReprOfLinSys<T,R,C,S>) {
+        self.perform_unchecked(&mut m.0)
     }
 
-    fn validate(&self, m: &MatrixReprOfLinSys<T, R, C, S>) -> Result<(), Self::Error> {
-        let row_zero_based_idx = self.row_zbi;
-        let nrows = m.0.nrows();
-
-        if row_zero_based_idx >= nrows {
-            Err(RowIdxOutOfBoundsError(row_zero_based_idx))
-        } else {
-            Ok(())
-        }
+    fn validate(&self, m: &MatrixReprOfLinSys<T,R,C,S>) -> Result<(), Self::Error> {
+        self.validate(&m.0)
     }
 }
